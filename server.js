@@ -1,226 +1,93 @@
-const express = require("express");
-const cors = require("cors");
-const googleTrends = require("google-trends-api");
+const express = require("express")
+const cors = require("cors")
 
-const app = express();
+const app = express()
 
-app.use(cors());
-app.use(express.json());
+app.use(cors())
+app.use(express.json())
+app.use(express.static("public"))
 
-/* ---------------- SEO TITLE SCORE ---------------- */
+const emotionalWords=[
+"Amazing","Ultimate","Powerful","Secret","Mind-Blowing","Shocking","Incredible"
+]
 
-function scoreTitle(title, keyword) {
+const curiosity=[
+"You Won't Believe","Nobody Talks About","The Hidden Truth","Before It's Too Late","What Happens Next"
+]
 
-  let score = 0;
+const formats=[
+(topic)=>`10 ${topic} Hacks That Actually Work`,
+(topic)=>`The Ultimate Guide to ${topic}`,
+(topic)=>`How to Master ${topic}`,
+(topic)=>`Beginner's Guide to ${topic}`,
+(topic)=>`Top ${topic} Mistakes You Must Avoid`,
+(topic)=>`${topic} Secrets Experts Don't Tell`
+]
 
-  if (title.toLowerCase().includes(keyword.toLowerCase()))
-    score += 30;
-
-  if (title.length >= 50 && title.length <= 60)
-    score += 20;
-
-  if (/\d/.test(title))
-    score += 15;
-
-  if (title.includes("?"))
-    score += 10;
-
-  return score;
+function random(arr){
+return arr[Math.floor(Math.random()*arr.length)]
 }
 
-/* ---------------- FIND BEST TITLE ---------------- */
+function calculateSEOScore(title){
 
-function findBestTitle(titles, keyword) {
+let score=50
 
-  let bestScore = 0;
-  let bestTitle = "";
+if(title.length<70) score+=10
+if(/[0-9]/.test(title)) score+=10
+if(title.includes("Ultimate")) score+=10
+if(title.includes("Guide")) score+=10
+if(title.includes("Secret")) score+=10
 
-  titles.forEach(title => {
-
-    const score = scoreTitle(title, keyword);
-
-    if (score > bestScore) {
-      bestScore = score;
-      bestTitle = title;
-    }
-
-  });
-
-  return bestTitle;
+return Math.min(score,100)
 }
 
-/* ---------------- HOME ROUTE ---------------- */
+app.post("/generate",(req,res)=>{
 
-app.get("/", (req, res) => {
-  res.send("AI Content Intelligence API running 🚀");
-});
+const {topic,audience,keyword,count}=req.body
 
-/* ---------------- GOOGLE TRENDS ---------------- */
+let titles=[]
 
-app.get("/trends/:keyword", async (req, res) => {
+for(let i=0;i<count;i++){
 
-  const keyword = req.params.keyword;
+const emotion=random(emotionalWords)
+const cur=random(curiosity)
+const format=random(formats)
 
-  try {
+let title=`${emotion} ${format(topic)} Using ${keyword} – ${cur}! Perfect for ${audience}`
 
-    const results = await googleTrends.dailyTrends({
-      geo: "US"
-    });
+let seo=calculateSEOScore(title)
 
-    let data;
+titles.push({
+title:title,
+seo:seo
+})
 
-    try {
-      data = JSON.parse(results);
-    } catch (parseError) {
+}
 
-      console.log("Google blocked request. Using fallback trends.");
+res.json({titles})
 
-      return res.json({
-        keyword: keyword,
-        trends: [
-          `${keyword} tools`,
-          `${keyword} tutorial`,
-          `${keyword} for beginners`,
-          `best ${keyword} apps`,
-          `${keyword} trends 2026`
-        ]
-      });
+})
 
-    }
+app.post("/outline",(req,res)=>{
 
-    const trending = data.default.trendingSearchesDays[0].trendingSearches
-      .map(item => item.title.query);
+const {topic}=req.body
 
-    const filtered = trending.filter(t =>
-      t.toLowerCase().includes(keyword.toLowerCase())
-    );
+const outline=[
 
-    res.json({
-      keyword: keyword,
-      trends: filtered.length ? filtered : trending.slice(0,5)
-    });
+`Introduction to ${topic}`,
+`Why ${topic} is important`,
+`Key benefits of ${topic}`,
+`Best tools related to ${topic}`,
+`Common mistakes beginners make`,
+`Future trends of ${topic}`,
+`Conclusion`
 
-  } catch (error) {
+]
 
-    console.log("Trend API error:", error);
+res.json({outline})
 
-    res.json({
-      keyword: keyword,
-      trends: [
-        `${keyword} tools`,
-        `${keyword} tutorial`,
-        `${keyword} strategies`,
-        `${keyword} tips`,
-        `${keyword} trends`
-      ]
-    });
+})
 
-  }
-
-});
-
-/* ---------------- TITLE GENERATOR ---------------- */
-
-app.post("/generate-titles", (req, res) => {
-
-  const keyword = req.body?.keyword;
-
-  if (!keyword) {
-    return res.status(400).json({
-      message: "Keyword is required"
-    });
-  }
-
-  const titles = [
-
-    `10 Best ${keyword} Tips for Beginners`,
-    `The Ultimate Guide to ${keyword} in 2026`,
-    `How ${keyword} is Transforming Technology`,
-    `Top 7 ${keyword} Trends You Should Know`,
-    `Why ${keyword} Matters More Than Ever`,
-    `${keyword}: Complete Beginner Guide`,
-    `How to Master ${keyword} Fast`,
-    `Is ${keyword} the Future of Innovation?`,
-    `The Hidden Power of ${keyword}`,
-    `Everything You Need to Know About ${keyword}`
-
-  ];
-
-  const bestTitle = findBestTitle(titles, keyword);
-
-  res.json({
-    titles,
-    bestTitle
-  });
-
-});
-
-/* ---------------- BLOG OUTLINE GENERATOR ---------------- */
-
-app.post("/generate-outline", (req, res) => {
-
-  const keyword = req.body?.keyword;
-
-  if (!keyword) {
-    return res.status(400).json({
-      message: "Keyword is required"
-    });
-  }
-
-  const outline = {
-
-    title: `Complete Guide to ${keyword}`,
-
-    sections: [
-
-      {
-        heading: `Introduction to ${keyword}`,
-        subtopics: [
-          `What is ${keyword}?`,
-          `Why ${keyword} is important`,
-          `How ${keyword} is evolving`
-        ]
-      },
-
-      {
-        heading: `Benefits of ${keyword}`,
-        subtopics: [
-          `Improved productivity`,
-          `Automation advantages`,
-          `Future potential`
-        ]
-      },
-
-      {
-        heading: `Best Practices for ${keyword}`,
-        subtopics: [
-          `Tips for beginners`,
-          `Common mistakes`,
-          `Expert strategies`
-        ]
-      },
-
-      {
-        heading: `Future of ${keyword}`,
-        subtopics: [
-          `Upcoming trends`,
-          `Industry predictions`,
-          `Opportunities`
-        ]
-      }
-
-    ]
-
-  };
-
-  res.json(outline);
-
-});
-
-/* ---------------- SERVER ---------------- */
-
-const PORT = 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(5000,()=>{
+console.log("Server running at http://localhost:5000")
+})
