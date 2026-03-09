@@ -1,187 +1,155 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-<title>AI Content Intelligence</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Blog Title Generator</title>
 
 <style>
 
 body{
-font-family: Arial;
-background:#0f172a;
+font-family: Arial, Helvetica, sans-serif;
+margin:0;
+height:100vh;
+display:flex;
+align-items:center;
+justify-content:center;
+background:linear-gradient(135deg,#0f172a,#6d28d9,#0f172a);
 color:white;
-text-align:center;
-padding:40px;
 }
 
 .container{
-background:#1e293b;
+width:500px;
 padding:30px;
-border-radius:10px;
-width:600px;
-margin:auto;
+border-radius:15px;
+background:rgba(255,255,255,0.1);
+backdrop-filter:blur(10px);
+box-shadow:0 10px 30px rgba(0,0,0,0.4);
 }
 
-input{
-padding:10px;
-width:70%;
-font-size:16px;
-border-radius:5px;
+h1{
+text-align:center;
+margin-bottom:20px;
+}
+
+input,select{
+width:100%;
+padding:12px;
+margin-top:10px;
 border:none;
+border-radius:8px;
+font-size:16px;
 }
 
 button{
-padding:10px 15px;
-background:#22c55e;
-color:white;
+width:100%;
+margin-top:15px;
+padding:12px;
 border:none;
-border-radius:5px;
+border-radius:8px;
+background:#8b5cf6;
+color:white;
+font-size:16px;
 cursor:pointer;
+transition:0.3s;
 }
 
-ul{
-text-align:left;
+button:hover{
+background:#7c3aed;
+}
+
+#results{
 margin-top:20px;
 }
 
-li{
-margin-bottom:10px;
-background:#334155;
-padding:10px;
+.title-card{
+background:rgba(255,255,255,0.15);
+padding:12px;
+border-radius:8px;
+margin-top:10px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.copy-btn{
+background:#22c55e;
+padding:6px 10px;
+border:none;
 border-radius:5px;
-}
-
-.score{
-color:#22c55e;
-font-weight:bold;
-}
-
-.copyBtn{
-margin-left:10px;
-background:#3b82f6;
-}
-
-.best{
-color:#22c55e;
-font-size:18px;
-font-weight:bold;
+color:white;
+cursor:pointer;
 }
 
 </style>
-
 </head>
 
 <body>
 
 <div class="container">
 
-<h1>AI Content Intelligence</h1>
+<h1>AI Blog Title Generator</h1>
 
-<input id="keyword" placeholder="Enter blog keyword">
+<input id="topic" placeholder="Enter blog topic">
 
-<button onclick="generateTitles()">Generate</button>
+<select id="mode">
+<option>SEO Optimized</option>
+<option>Viral</option>
+<option>Clickbait</option>
+<option>Professional</option>
+<option>YouTube</option>
+</select>
 
-<h3>Best SEO Title ⭐</h3>
-<p id="bestTitle" class="best"></p>
+<button onclick="generateTitles()">Generate Titles</button>
 
-<h3>Generated Titles</h3>
-<ul id="titles"></ul>
-
-<h3>Trending Topics</h3>
-<ul id="trends"></ul>
+<div id="results"></div>
 
 </div>
 
 <script>
 
-function calculateScore(title,keyword){
+function generateTitles(){
 
-let score=0;
+const topic=document.getElementById("topic").value
+const results=document.getElementById("results")
 
-if(title.toLowerCase().includes(keyword.toLowerCase()))
-score+=30;
+if(topic===""){
+alert("Enter a topic")
+return
+}
 
-if(title.length>=50 && title.length<=60)
-score+=20;
+const titles=[
+`10 Amazing ${topic} Ideas You Need to Know`,
+`Top ${topic} Trends in 2026`,
+`The Ultimate Guide to ${topic}`,
+`Why ${topic} is the Future`,
+`Beginner's Guide to ${topic}`
+]
 
-if(/[0-9]/.test(title))
-score+=15;
+results.innerHTML=""
 
-if(title.includes("?"))
-score+=10;
+titles.forEach(title=>{
 
-return score;
+const div=document.createElement("div")
+div.className="title-card"
+
+div.innerHTML=`
+<span>${title}</span>
+<button class="copy-btn" onclick="copyTitle('${title}')">Copy</button>
+`
+
+results.appendChild(div)
+
+})
 
 }
 
-function copyText(text){
-
-navigator.clipboard.writeText(text);
-
-alert("Copied!");
-
-}
-
-async function generateTitles(){
-
-const keyword=document.getElementById("keyword").value;
-
-const response=await fetch("http://localhost:5000/generate-titles",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({keyword})
-});
-
-const data=await response.json();
-
-document.getElementById("bestTitle").innerText=data.bestTitle;
-
-const titleList=document.getElementById("titles");
-
-titleList.innerHTML="";
-
-data.titles.forEach(title=>{
-
-const score=calculateScore(title,keyword);
-
-const li=document.createElement("li");
-
-li.innerHTML=`
-${title}
-<br>
-<span class="score">SEO Score: ${score}</span>
-<button class="copyBtn" onclick="copyText('${title}')">Copy</button>
-`;
-
-titleList.appendChild(li);
-
-});
-
-
-const trendResponse=await fetch(`http://localhost:5000/trends/${keyword}`);
-
-const trendData=await trendResponse.json();
-
-const trendList=document.getElementById("trends");
-
-trendList.innerHTML="";
-
-trendData.trends.forEach(trend=>{
-
-const li=document.createElement("li");
-
-li.innerText=trend;
-
-trendList.appendChild(li);
-
-});
-
+function copyTitle(text){
+navigator.clipboard.writeText(text)
+alert("Copied!")
 }
 
 </script>
 
 </body>
-
 </html>
